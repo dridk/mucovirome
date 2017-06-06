@@ -1,0 +1,8 @@
+
+
+HUMAN_REFERENCE: /PROJECTS/Virome/ref/hg19.fa
+CENTRIFUGE_INDEX: ../db/abv  
+SAMPLES : 
+  - B
+
+
