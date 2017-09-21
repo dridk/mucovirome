@@ -1,13 +1,16 @@
 
+configfile : "config.yml"
+
+
 rule all:
 	input:
-		[s+".centrifuge.result" for s in config["SAMPLES"]]
+		[s+".krona" for s in config["SAMPLES"]]
 		
 
 rule clean :
 	input:
-		forward = "{name}_1.fastq",
-		reverse = "{name}_2.fastq"
+		forward = config["RAW_DIR"] + "/{name}_1.fastq",
+		reverse = config["RAW_DIR"] + "/{name}_2.fastq"
 	output:
 		forward = "{name}.clean_1.fastq",
 		reverse = "{name}.clean_2.fastq",
@@ -18,6 +21,13 @@ rule clean :
 		"sickle pe -f {input.forward} -r {input.reverse} -t sanger -o {output.forward} -p {output.reverse} -s {output.single} > {log}"
 
 
+rule unzip:
+	input:
+		"{filename}.fastq.gz"
+	output:
+		"{filename}.fastq"
+	shell:
+		"gzip -kd {input}"
 		
 
 rule remove_trim:
@@ -31,21 +41,10 @@ rule remove_trim:
 		"cutadapt -g ^ATCGTCGTCGTAGGCTGCTC {input} -o {output} -e 0.1 > {log}"
 
 
-rule bowtie_create_index:
+rule bwa:
 	input:
-		config['HUMAN_REFERENCE']
-	output:
-		protected("ref/")
-	shell:
-		 "mkdir {output};"
-		 "bowtie2-build {input} ref/ref_index"
-
-
-rule bowtie_align:
-	input:
-		forward="{name}.trimmed_1.fastq",
-		reverse="{name}.trimmed_2.fastq",
-		ref = "/PROJECTS/Virome/ref/"
+		forward="{name}.clean_1.fastq",
+		reverse="{name}.clean_2.fastq",
 	output:
 		"{name}.host_mapping.sam"
 	threads:
@@ -53,8 +52,8 @@ rule bowtie_align:
 	log:
 		"{name}.host_mapping.log"
 	shell:
-		"bowtie2 -x {input.ref}ref_index -1 {input.forward} -2 {input.reverse} -S {output} -p {threads} 2> {log}" 
-
+		"bwa mem -t {threads} {config[HUMAN_REFERENCE]} {input.forward} {input.reverse} > {output} 2> {log}"
+		
 
 rule sam_to_bam:
 	input: 
@@ -100,12 +99,29 @@ rule spades:
 		"{name}.spade.log"
 	threads: 128
 	shell:
-		"SPAdes --meta -o {params.spade_dir} -1 {input.forward} -2 {input.reverse} -t {threads} > {log}"
+		"spades.py --meta -o {params.spade_dir} -1 {input.forward} -2 {input.reverse} -t {threads} > {log}"
+
+
+# rule centrifuge:
+# 	input:
+# 		"{name}.spade_out/contigs.fasta"
+# 	output:
+# 		report = "{name}.centrifuge.report",
+# 		result = "{name}.centrifuge.result"
+# 	params:
+# 		index = config["CENTRIFUGE_INDEX"]
+# 	threads:
+# 		128
+# 	log: 
+# 		"{name}.log"
+# 	shell:
+# 		"centrifuge -f -x {params.index} -U {input}  -p {threads} -S {output.result} --report-file {output.report}"
 
 
 rule centrifuge:
 	input:
-		"{name}.spade_out/contigs.fasta"
+		R1 = "{name}.without_human_1.fastq",
+		R2 = "{name}.without_human_2.fastq"
 	output:
 		report = "{name}.centrifuge.report",
 		result = "{name}.centrifuge.result"
@@ -116,7 +132,8 @@ rule centrifuge:
 	log: 
 		"{name}.log"
 	shell:
-		"centrifuge -f -x {params.index} -U {input}  -p {threads} -S {output.result} --report-file {output.report}"
+		"centrifuge -f -x {params.index} -1 {input.R1} -2 {input.R2} -p {threads} -S {output.result} --report-file {output.report}"
+
 
 
 rule krona_report:
@@ -124,7 +141,6 @@ rule krona_report:
 		"{name}.centrifuge.result"
 	output:
 		"{name}.krona"
-	params:
-		index = config["CENTRIFUGE_INDEX"]
+
 	shell:
-		"centrifuge-kreport -x {param.index} {input} > {output}"
+		"centrifuge-kreport -x {config[CENTRIFUGE_INDEX]} {input} > {output}"
