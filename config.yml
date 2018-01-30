@@ -2,15 +2,8 @@
 
 HUMAN_REFERENCE: /DATAS/references/hg19/hg19.fa
 CENTRIFUGE_INDEX: /DATAS/centrifuge/p_compressed+h+v
-RAW_DIR: "raw/biomerieux/virome"
+RAW_DIR: "raw"
 SAMPLES : 
-  - BS3535
-  - BS3536
-  - BS3537
-  - BS3538
-  - BS3539
-  - BS3540
-  - BS3541
-
+    - A
 
 
