@@ -132,7 +132,7 @@ rule centrifuge:
 	log: 
 		"{name}.log"
 	shell:
-		"centrifuge -f -x {params.index} -1 {input.R1} -2 {input.R2} -p {threads} -S {output.result} --report-file {output.report}"
+		"centrifuge -q -x {params.index} -1 {input.R1} -2 {input.R2} -p {threads} -S {output.result} --report-file {output.report}"
 
 
 
