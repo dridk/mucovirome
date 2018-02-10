@@ -1,0 +1,30 @@
+#! /bin/sh
+
+
+usage() {
+        echo -e "Usage:\t$0 input.krona [output.html]"
+        exit 1
+}
+
+if [ $# -lt 1 ]
+then
+        usage
+fi
+
+input=$1;
+k2k="$input.k2k.krona"
+output="$k2k.html"
+java -jar /PROGS/INTERN/java/K2K.jar $input;
+
+if [ $# -gt 1 ]
+then
+  output=$2
+fi
+
+
+command="ktImportText $k2k -o $output"
+echo "$command"
+$command;
+
+exit 0
+
