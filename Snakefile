@@ -2,6 +2,10 @@
 configfile : "config.yml"
 
 
+rule myrule:
+	input:"test.txt"
+
+
 rule all:
 	input:
 		[s+".krona" for s in config["SAMPLES"]]
