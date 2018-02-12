@@ -2,13 +2,46 @@
 configfile : "config.yml"
 
 
-rule myrule:
-	input:"test.txt"
-
-
 rule all:
 	input:
-		[s+".krona" for s in config["SAMPLES"]]
+		[s+".kaiju.krona.html" for s in config["SAMPLES"]]
+#kaiju 
+
+rule kaiju:
+	input:
+		forward = "{name}.clean_1.fastq",
+		reverse = "{name}.clean_2.fastq"
+	output:
+		"{name}.kaiju.out"
+	params:
+		node  = "/BIG_SPACE/lbillard/apps/kaiju/util/nodes.dmp",
+		index = "/BIG_SPACE/lbillard/apps/kaiju/util/kaiju_db.fmi"
+	threads: 20
+	shell:
+		"kaiju -t {params.node} -f {params.index} -i {input.forward} -j {input.reverse} -z {threads} -o {output}"
+
+
+rule kaiju_to_krona:
+	input:
+		"{name}.kaiju.out"
+	output:
+		"{name}.kaiju.krona"
+	params:
+		node  = "/BIG_SPACE/lbillard/apps/kaiju/util/nodes.dmp",
+		name = "/BIG_SPACE/lbillard/apps/kaiju/util/names.dmp"
+	shell:
+		"kaiju2krona -t {params.node} -n {params.name} -i {input} -o {output}"
+
+rule krona_to_html:
+	input:
+		"{name}.kaiju.krona"
+	output:
+		"{name}.kaiju.krona.html"
+	shell:
+		"ktImportText -o {output} {input}"
+
+
+
 		
 
 rule clean :
@@ -31,7 +64,7 @@ rule unzip:
 	output:
 		"{filename}.fastq"
 	shell:
-		"gzip -kd {input}"
+		"pigz -kd {input}"
 		
 
 rule remove_trim:
@@ -148,3 +181,15 @@ rule krona_report:
 
 	shell:
 		"centrifuge-kreport -x {config[CENTRIFUGE_INDEX]} {input} > {output}"
+
+rule k2k_html:
+        input:
+                "{name}.krona"
+        output:
+                "{name}.krona.k2k.html"
+        shell:
+                "./scripts/k2k {input} {output}"
+
+
+
+
