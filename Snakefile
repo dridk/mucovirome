@@ -4,28 +4,28 @@ configfile : "config.yml"
 
 rule all:
 	input:
-		[s+".kaiju.krona.html" for s in config["SAMPLES"]]
+		[s+".without.kaiju.krona.html" for s in config["SAMPLES"]]
 #kaiju 
 
 rule kaiju:
 	input:
-		forward = "{name}.clean_1.fastq",
-		reverse = "{name}.clean_2.fastq"
+		forward = "{name}.without_human_1.fastq",
+		reverse = "{name}.without_human_2.fastq"
 	output:
-		"{name}.kaiju.out"
+		"{name}.without.kaiju.out"
 	params:
 		node  = "/BIG_SPACE/lbillard/apps/kaiju/util/nodes.dmp",
 		index = "/BIG_SPACE/lbillard/apps/kaiju/util/kaiju_db.fmi"
 	threads: 20
 	shell:
-		"kaiju -t {params.node} -f {params.index} -i {input.forward} -j {input.reverse} -z {threads} -o {output}"
+		"kaiju -a mem -v -t {params.node} -f {params.index} -i {input.forward} -j {input.reverse} -z {threads} -o {output}"
 
 
 rule kaiju_to_krona:
 	input:
-		"{name}.kaiju.out"
+		"{name}.without.kaiju.out"
 	output:
-		"{name}.kaiju.krona"
+		"{name}.without.kaiju.krona"
 	params:
 		node  = "/BIG_SPACE/lbillard/apps/kaiju/util/nodes.dmp",
 		name = "/BIG_SPACE/lbillard/apps/kaiju/util/names.dmp"
@@ -34,13 +34,19 @@ rule kaiju_to_krona:
 
 rule krona_to_html:
 	input:
-		"{name}.kaiju.krona"
+		"{name}.without.kaiju.krona"
 	output:
-		"{name}.kaiju.krona.html"
+		"{name}.without.kaiju.krona.html"
 	shell:
 		"ktImportText -o {output} {input}"
 
-
+rule create_report:
+	input:
+		"{name}.clean_1.fastq"
+	output:
+		"{name}.report"
+	shell:
+		"echo $(cat {input}|wc -l)/4|bc > {output};"
 
 		
 
